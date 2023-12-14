@@ -1,0 +1,43 @@
+name: 'Deploy to Environment'
+description: 'Deploy repo to environment'
+inputs:
+  environment:
+    description: 'Environment to assume'
+    required: true
+  image-tag:
+    description: 'Image tag to deploy'
+    required: true
+  accounting-tag:
+    description: 'Accounting tag for the cloudformation stack'
+    required: true
+    default: 'none'
+
+runs:
+  using: 'composite'
+  steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Assume role for environment
+        uses: bisnow/github-actions-assume-role-for-environment@v1.0
+        with:
+          environment: ${{ inputs.environment }}
+      - name: Check cloudformation template
+        uses: stelligent/cfn_nag@master
+        with:
+          input_path: ./deploy/${{ env.ENVIRONMENT }}/ecs-fargate-service.yaml
+      - name: Write sqs config file to SSM
+        uses: bisnow/github-actions-store-sqs-config-ssm@v1.2
+        with:
+          file-path: ./deploy/${{ env.ENVIRONMENT }}/etc/sqs-worker.conf
+          base64: 'true'
+          ssm-path: '/${{ env.ECS_SERVICE }}/${{ env.ENVIRONMENT }}/sqs_config'
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@15936c7760eabad905250f6660ef08cd2c0cb08b
+        with:
+          name: ${{ env.ECS_SERVICE }}
+          template: "./deploy/${{ env.ENVIRONMENT }}/ecs-fargate-service.yaml"
+          parameter-overrides: "ImageVersion=${{ input.image-tag }}"
+          tags: "[ {\"Key\": \"accounting\", \"Value\": \"${{ input.accounting-tag}}\"} ]"
+          capabilities: CAPABILITY_NAMED_IAM
+          no-fail-on-empty-changeset: "1"
+          change-set-name: ${{ env.ECS_SERVICE }}-${{ github.run_number }}
