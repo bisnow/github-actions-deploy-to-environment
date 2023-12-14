@@ -6,7 +6,12 @@ This GitHub Action is designed to automate the deployment of a repository to dif
 ## Inputs
 
 ### `environment`
-**Required** The name of the environment where the deployment will occur. This is used to assume the correct role and to determine paths for resources.
+**Required** The environment where the deployment will occur. It must be one of the following:
+- `biscred-dev`
+- `biscred-prod`
+- `bisnow`
+- `vapor`
+
 
 ### `image-tag`
 **Required** The tag of the Docker image that will be deployed. This tag is used to set the `ImageVersion` parameter in the CloudFormation template.
@@ -37,18 +42,17 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-
       - name: Deploy to Environment
-        uses: ./.github/actions/deploy-to-environment
+        uses: bisnow/github-actions-deploy-to-environment
         with:
-          environment: 'prod'
+          environment: 'biscred-dev'
           image-tag: 'v1.2.3'
           accounting-tag: 'project123'
 ```
+Replace biscred-dev with the environment you wish to assume the role for.
 
 ## Additional Notes
 
-Ensure that the AWS credentials required for role assumption and CloudFormation deployment are correctly configured in your repository's secrets.
 The paths to CloudFormation templates and SSM parameters should be valid and reflect the structure of your project.
 Test this action in a controlled environment, such as a development or staging environment, before using it in production.
 Contributing
