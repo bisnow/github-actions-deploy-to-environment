@@ -1,8 +1,8 @@
 name: 'Deploy to Environment'
 description: 'Deploy repo to environment'
 inputs:
-  environment:
-    description: 'Environment to assume'
+  aws_account:
+    description: 'AWS account to assume'
     required: true
   image-tag:
     description: 'Image tag to deploy'
@@ -15,10 +15,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
-      - name: Assume role for environment
+      - name: Assume CD/CI role for AWS account
         uses: bisnow/github-actions-assume-role-for-environment@main
         with:
-          environment: ${{ inputs.environment }}
+          aws_account:: ${{ inputs.aws_account }}
       - name: Check cloudformation template
         uses: stelligent/cfn_nag@master
         with:
