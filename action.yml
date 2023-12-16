@@ -16,7 +16,7 @@ runs:
   using: 'composite'
   steps:
       - name: Assume role for environment
-        uses: bisnow/github-actions-assume-role-for-environment@v1.0
+        uses: bisnow/github-actions-assume-role-for-environment@main
         with:
           environment: ${{ inputs.environment }}
       - name: Check cloudformation template
