@@ -14,6 +14,9 @@ inputs:
   sqs-config-file-path:
     description: 'SQS config file to store in SSM'
     required: true
+  cf-template-path:
+    description: 'Path to cloudformation template'
+    required: true
 
 runs:
   using: 'composite'
@@ -36,7 +39,7 @@ runs:
         uses: aws-actions/aws-cloudformation-github-deploy@15936c7760eabad905250f6660ef08cd2c0cb08b
         with:
           name: ${{ env.ECS_SERVICE }}
-          template: "./deploy/${{ env.ENVIRONMENT }}/ecs-fargate-service.yaml"
+          template: ${{ inputs.cf-template-path }}
           parameter-overrides: "ImageVersion=${{ inputs.image-tag }}"
           tags: "[ {\"Key\": \"accounting\", \"Value\": \"${{ inputs.accounting-tag }}\"} ]"
           capabilities: CAPABILITY_NAMED_IAM
