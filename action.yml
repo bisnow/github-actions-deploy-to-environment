@@ -28,7 +28,7 @@ runs:
       - name: Check cloudformation template
         uses: stelligent/cfn_nag@master
         with:
-          input_path: ./deploy/${{ env.ENVIRONMENT }}/ecs-fargate-service.yaml
+          input_path: ${{ inputs.cf-template-path }}
       - name: Write sqs config file to SSM
         uses: bisnow/github-actions-store-sqs-config-ssm@v1.2
         with:
