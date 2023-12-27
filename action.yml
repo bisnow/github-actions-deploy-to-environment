@@ -7,10 +7,9 @@ inputs:
   image-tag:
     description: 'Image tag to deploy'
     required: true
-  accounting-tag:
+  tags:
     description: 'Accounting tag for the cloudformation stack'
-    required: true
-    default: 'none'
+    required: false
   sqs-config-file-path:
     description: 'SQS config file to store in SSM'
     required: true
@@ -41,7 +40,7 @@ runs:
           name: ${{ env.ECS_SERVICE }}
           template: ${{ inputs.cf-template-path }}
           parameter-overrides: "ImageVersion=${{ inputs.image-tag }}"
-          tags: "[ {\"Key\": \"accounting\", \"Value\": \"${{ inputs.accounting-tag }}\"} ]"
+          tags: ${{ inputs.tags }}
           capabilities: CAPABILITY_NAMED_IAM
           no-fail-on-empty-changeset: "1"
           change-set-name: ${{ env.ECS_SERVICE }}-${{ github.run_number }}
