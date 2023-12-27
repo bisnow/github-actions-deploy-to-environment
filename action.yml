@@ -11,6 +11,10 @@ inputs:
     description: 'Accounting tag for the cloudformation stack'
     required: true
     default: 'none'
+  sqs-config:
+    description: 'SQS config file to store in SSM'
+    required: true
+    default: ./deploy/${{ env.ENVIRONMENT }}/etc/sqs-worker.conf
 
 runs:
   using: 'composite'
