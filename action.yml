@@ -11,10 +11,9 @@ inputs:
     description: 'Accounting tag for the cloudformation stack'
     required: true
     default: 'none'
-  sqs-config:
+  sqs-config-file-path:
     description: 'SQS config file to store in SSM'
     required: true
-    default: ./deploy/${{ env.ENVIRONMENT }}/etc/sqs-worker.conf
 
 runs:
   using: 'composite'
@@ -30,7 +29,7 @@ runs:
       - name: Write sqs config file to SSM
         uses: bisnow/github-actions-store-sqs-config-ssm@v1.2
         with:
-          file-path: ./deploy/${{ env.ENVIRONMENT }}/etc/sqs-worker.conf
+          file-path: ${{ inputs.sqs-config-file-path }}
           base64: 'true'
           ssm-path: '/${{ env.ECS_SERVICE }}/${{ env.ENVIRONMENT }}/sqs_config'
       - name: Deploy to AWS CloudFormation
