@@ -16,6 +16,9 @@ inputs:
   cf-template-path:
     description: 'Path to cloudformation template'
     required: true
+  name:
+    description: 'Name of the cloudformation stack'
+    required: true
 
 runs:
   using: 'composite'
@@ -37,7 +40,7 @@ runs:
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@15936c7760eabad905250f6660ef08cd2c0cb08b
         with:
-          name: ${{ env.ECS_SERVICE }}
+          name: ${{ inputs.name }}
           template: ${{ inputs.cf-template-path }}
           parameter-overrides: "ImageVersion=${{ inputs.image-tag }}"
           tags: ${{ inputs.tags }}
