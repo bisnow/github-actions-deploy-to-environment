@@ -22,7 +22,6 @@ inputs:
   ssm-path:
     description: 'Path to store SQS config in SSM'
     required: true
-    default: '/${{ env.ECS_SERVICE }}/${{ env.ENVIRONMENT }}/sqs_config'
 
 runs:
   using: 'composite'
