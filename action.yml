@@ -19,6 +19,10 @@ inputs:
   name:
     description: 'Name of the cloudformation stack'
     required: true
+  ssm-path:
+    description: 'Path to store SQS config in SSM'
+    required: true
+    default: '/${{ env.ECS_SERVICE }}/${{ env.ENVIRONMENT }}/sqs_config'
 
 runs:
   using: 'composite'
@@ -36,7 +40,7 @@ runs:
         with:
           file-path: ${{ inputs.sqs-config-file-path }}
           base64: 'true'
-          ssm-path: '/${{ env.ECS_SERVICE }}/${{ env.ENVIRONMENT }}/sqs_config'
+          ssm-path: ${{ inputs.ssm-path }}
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@15936c7760eabad905250f6660ef08cd2c0cb08b
         with:
