@@ -12,7 +12,8 @@ inputs:
     required: false
   sqs-config-file-path:
     description: 'SQS config file to store in SSM'
-    required: true
+    default: ''
+    required: false
   cf-template-path:
     description: 'Path to cloudformation template'
     required: true
@@ -21,7 +22,8 @@ inputs:
     required: true
   ssm-path:
     description: 'Path to store SQS config in SSM'
-    required: true
+    default: ''
+    required: false
 
 runs:
   using: 'composite'
@@ -36,6 +38,7 @@ runs:
           input_path: ${{ inputs.cf-template-path }}
       - name: Write sqs config file to SSM
         uses: bisnow/github-actions-store-sqs-config-ssm@v1.2
+        if: ${{ inputs.sqs-config-file-path != '' }}
         with:
           file-path: ${{ inputs.sqs-config-file-path }}
           base64: 'true'
