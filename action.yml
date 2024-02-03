@@ -14,7 +14,7 @@ inputs:
     description: 'SQS config file to store in SSM'
     default: ''
     required: false
-  cf-template-path:
+  cf-template:
     description: 'Path to cloudformation template'
     required: true
   name:
