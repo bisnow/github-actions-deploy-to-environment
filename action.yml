@@ -1,4 +1,4 @@
-name: 'Deploy to Environment'
+name: Deploy to ${{ env.ENVIRONMENT }}
 description: 'Deploy repo to environment'
 inputs:
   aws_account:
@@ -24,6 +24,9 @@ inputs:
     description: 'Path to store SQS config in SSM'
     default: ''
     required: false
+  environment:
+    description: 'The environment to deploy to'
+    required: true
   cdn-bucket:
     description: 'Sync CDN with public folder'
     default: ''
@@ -46,14 +49,14 @@ runs:
       run: |
         docker pull ${{ env.REGISTRY }}:${{ inputs.image-tag }}
     - name: Sync assets with CDN
-      if: ${{ inputs.cdn-bucket != '' }}
       shell: bash
       run: |
         docker create --name build-${{ github.run_id }} ${{ env.REGISTRY }}:${{ inputs.image-tag }}
         docker cp build-${{ github.run_id }}:/app/public ./s3-public-${{ github.run_id }}
-        aws s3 sync ./s3-public-${{ github.run_id }} s3://${{ inputs.cdn-bucket }}/${{ inputs.image-tag }} \
+        export CDN_PATH=$(cd s3-public-${{ github.run_id }} && basename $(find . -maxdepth 1 -type d -name "rc-[0-9]*"))
+        aws s3 sync ./s3-public-${{ github.run_id }}/$CDN_PATH s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
           --cache-control max-age=31536000 \
-          --exclude "*.php" --exclude ".htaccess" --exclude ".gitignore" --exclude "*.txt" --exclude "*icon*" --exclude "vendor" \
+          --exclude "*.php" --exclude ".htaccess" --exclude ".gitignore" --exclude "*.txt" --exclude "*icon*" --exclude "vendor" --exclude "mix-manifest.json" \
           --follow-symlinks --delete
         docker rm build-${{ github.run_id }}
         rm -rf ./s3-public-${{ github.run_id }}
@@ -73,7 +76,7 @@ runs:
         base64: 'true'
         ssm-path: ${{ inputs.ssm-path }}
     - name: Deploy to AWS CloudFormation
-      uses: aws-actions/aws-cloudformation-github-deploy@15936c7760eabad905250f6660ef08cd2c0cb08b
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: ${{ inputs.name }}
         template: ${{ inputs.cf-template-path }}
