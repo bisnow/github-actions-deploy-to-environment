@@ -50,7 +50,7 @@ runs:
     - name: Pull image
       shell: bash
       run: |
-        docker pull ${{ inputs.repository }}:${{ inputs.image-tag }}
+        docker pull --platform=linux/arm64 ${{ inputs.repository }}:${{ inputs.image-tag }}
     - name: Sync assets with CDN
       shell: bash
       run: |
