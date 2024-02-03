@@ -1,7 +1,7 @@
 name: Deploy to ${{ env.ENVIRONMENT }}
 description: 'Deploy repo to environment'
 inputs:
-  aws_account:
+  aws-account:
     description: 'AWS account to assume'
     required: true
   image-tag:
@@ -24,6 +24,9 @@ inputs:
     description: 'Path to store SQS config in SSM'
     default: ''
     required: false
+  repository:
+    description: 'Docker ecr repo'
+    required: true
   environment:
     description: 'The environment to deploy to'
     required: true
@@ -40,18 +43,18 @@ runs:
     - name: Assume CD/CI role for AWS account
       uses: bisnow/github-actions-assume-role-for-environment@main
       with:
-        aws_account: ${{ inputs.aws_account }}
+        aws-account: ${{ inputs.aws-account }}
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
     - name: Pull image
       shell: bash
       run: |
-        docker pull ${{ env.REGISTRY }}:${{ inputs.image-tag }}
+        docker pull ${{ inputs.repository }}:${{ inputs.image-tag }}
     - name: Sync assets with CDN
       shell: bash
       run: |
-        docker create --name build-${{ github.run_id }} ${{ env.REGISTRY }}:${{ inputs.image-tag }}
+        docker create --name build-${{ github.run_id }} ${{ inputs.repository }}:${{ inputs.image-tag }}
         docker cp build-${{ github.run_id }}:/app/public ./s3-public-${{ github.run_id }}
         export CDN_PATH=$(cd s3-public-${{ github.run_id }} && basename $(find . -maxdepth 1 -type d -name "rc-[0-9]*"))
         aws s3 sync ./s3-public-${{ github.run_id }}/$CDN_PATH s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
@@ -63,7 +66,7 @@ runs:
     - name: Tag image and push image
       shell: bash
       run: |
-        docker buildx imagetools create -t ${{ env.REGISTRY }}:${{ inputs.environment }} ${{ env.REGISTRY }}:${{ inputs.image-tag }}
+        docker buildx imagetools create -t ${{ inputs.repository }}:${{ inputs.environment }} ${{ inputs.repository }}:${{ inputs.image-tag }}
     - name: Check cloudformation template
       uses: stelligent/cfn_nag@master
       with:
