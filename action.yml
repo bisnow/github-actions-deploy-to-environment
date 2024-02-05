@@ -1,4 +1,4 @@
-name: Deploy to ${{ env.ENVIRONMENT }}
+name: Deploy to ${{ inputs.environment }}
 description: 'Deploy repo to environment'
 inputs:
   aws-account:
