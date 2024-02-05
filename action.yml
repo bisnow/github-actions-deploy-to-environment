@@ -83,7 +83,7 @@ runs:
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: ${{ inputs.name }}
-        template: ${{ inputs.cf-template-path }}
+        template: ${{ inputs.cf-template }}
         parameter-overrides: "ImageVersion=${{ inputs.image-tag }}"
         tags: ${{ inputs.tags }}
         capabilities: CAPABILITY_NAMED_IAM
