@@ -52,9 +52,10 @@ runs:
       run: |
         docker pull --platform=linux/arm64 ${{ inputs.repository }}:${{ inputs.image-tag }}
     - name: Sync assets with CDN
+      if: ${{ inputs.cdn-bucket != '' }}
       shell: bash
       run: |
-        docker create --name build-${{ github.run_id }} ${{ inputs.repository }}:${{ inputs.image-tag }}
+        docker create --platform=linux/arm64 --name build-${{ github.run_id }} ${{ inputs.repository }}:${{ inputs.image-tag }}
         docker cp build-${{ github.run_id }}:/app/public ./s3-public-${{ github.run_id }}
         export CDN_PATH=$(cd s3-public-${{ github.run_id }} && basename $(find . -maxdepth 1 -type d -name "rc-[0-9]*"))
         aws s3 sync ./s3-public-${{ github.run_id }}/$CDN_PATH s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
