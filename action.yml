@@ -85,6 +85,6 @@ runs:
         name: ${{ inputs.name }}
         template: ${{ inputs.cf-template }}
         parameter-overrides: "ImageVersion=${{ inputs.image-tag }}"
-        tags: ${{ inputs.tags }}
+        tags: "[{\"Key\": \"cdci\",\"Value\":\"github\"},${{ inputs.tags }}]"
         capabilities: CAPABILITY_NAMED_IAM
         no-fail-on-empty-changeset: "1"
