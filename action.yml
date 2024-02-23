@@ -63,12 +63,11 @@ runs:
         docker create --platform=linux/arm64 --name build-${{ github.run_id }} ${{ inputs.repository }}:${{ inputs.image-tag }}
         docker cp build-${{ github.run_id }}:/app/public ./s3-public-${{ github.run_id }}
         export CDN_PATH=$(cd s3-public-${{ github.run_id }} && basename $(find . -maxdepth 1 -type d -name "rc-[0-9]*"))
-        ln -s ./s3-public-${{ github.run_id }}/$CDN_PATH ./s3-public-${{ github.run_id }}/current
         aws s3 sync ./s3-public-${{ github.run_id }}/$CDN_PATH s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
           --cache-control max-age=31536000 \
           --exclude "*.php" --exclude ".htaccess" --exclude ".gitignore" --exclude "*.txt" --exclude "*icon*" --exclude "vendor" --exclude "mix-manifest.json" \
           --follow-symlinks --delete
-        aws s3 cp ./s3-public-${{ github.run_id }}/current s3://${{ inputs.cdn-bucket }}/current 
+        aws s3api put-object --bucket ${{ inputs.cdn-bucket }} --key current --website-redirect-location /$CDN_PATH
         docker rm build-${{ github.run_id }}
         rm -rf ./s3-public-${{ github.run_id }}
         echo "::set-output name=asset_url::${{ inputs.cdn-bucket }}/$CDN_PATH"
