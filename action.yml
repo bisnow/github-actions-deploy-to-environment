@@ -67,10 +67,9 @@ runs:
           --cache-control max-age=31536000 \
           --exclude "*.php" --exclude ".htaccess" --exclude ".gitignore" --exclude "*.txt" --exclude "*icon*" --exclude "vendor" --exclude "mix-manifest.json" \
           --follow-symlinks --delete
-        aws s3api put-object --bucket ${{ inputs.cdn-bucket }} --key current --website-redirect-location /$CDN_PATH
         docker rm build-${{ github.run_id }}
         rm -rf ./s3-public-${{ github.run_id }}
-        echo "::set-output name=asset_url::${{ inputs.cdn-bucket }}/$CDN_PATH"
+        echo "::set-output name=asset_url::https://${{ inputs.cdn-bucket }}/$CDN_PATH"
     - name: Tag image and push image
       shell: bash
       run: |
@@ -91,7 +90,7 @@ runs:
       with:
         name: ${{ inputs.name }}
         template: ${{ inputs.cf-template }}
-        parameter-overrides: ImageVersion=${{ inputs.image-tag }}${{ if inputs.cdn-bucket == '' || ", AssetURL=https://${{ steps.sync-cdn.outputs.asset_url }}"  }}
+        parameter-overrides: ImageVersion=${{ inputs.image-tag }}${{ if inputs.cdn-bucket == '' || ", AssetURL=${{ steps.sync-cdn.outputs.asset_url }}"  }}
         tags: "[{\"Key\": \"cdci\",\"Value\":\"github\"},${{ inputs.tags }}]"
         capabilities: CAPABILITY_NAMED_IAM
         no-fail-on-empty-changeset: "1"
