@@ -34,6 +34,10 @@ inputs:
     description: 'Sync CDN with public folder'
     default: ''
     required: false
+  parameter-overrides:
+    description: 'Cloudformation parameter overrides'
+    default: ''
+    required: false
 
 runs:
   using: 'composite'
@@ -53,6 +57,7 @@ runs:
         docker pull --platform=linux/arm64 ${{ inputs.repository }}:${{ inputs.image-tag }}
     - name: Sync assets with CDN
       if: ${{ inputs.cdn-bucket != '' }}
+      id: sync-cdn
       shell: bash
       run: |
         docker create --platform=linux/arm64 --name build-${{ github.run_id }} ${{ inputs.repository }}:${{ inputs.image-tag }}
@@ -66,6 +71,7 @@ runs:
         aws s3 cp ./s3-public-${{ github.run_id }}/current s3://${{ inputs.cdn-bucket }}/current 
         docker rm build-${{ github.run_id }}
         rm -rf ./s3-public-${{ github.run_id }}
+        echo "::set-output name=asset_url::${{ inputs.cdn-bucket }}/$CDN_PATH"
     - name: Tag image and push image
       shell: bash
       run: |
@@ -86,7 +92,7 @@ runs:
       with:
         name: ${{ inputs.name }}
         template: ${{ inputs.cf-template }}
-        parameter-overrides: "ImageVersion=${{ inputs.image-tag }}"
+        parameter-overrides: ImageVersion=${{ inputs.image-tag }}${{ if inputs.cdn-bucket == '' || ", AssetURL= ${{ steps.sync-cdn.outputs.asset_url }}"  }}
         tags: "[{\"Key\": \"cdci\",\"Value\":\"github\"},${{ inputs.tags }}]"
         capabilities: CAPABILITY_NAMED_IAM
         no-fail-on-empty-changeset: "1"
