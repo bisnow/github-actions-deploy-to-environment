@@ -35,7 +35,7 @@ inputs:
     default: ''
     required: false
   asset-url:
-    description: 'Asset URL to use in cloudformation'
+    description: 'Set to a non-empty string to use the asset-url output from the sync-cdn step'
     default: ''
     required: false
   parameter-overrides:
@@ -67,6 +67,7 @@ runs:
         docker create --platform=linux/arm64 --name build-${{ github.run_id }} ${{ inputs.repository }}:${{ inputs.image-tag }}
         docker cp build-${{ github.run_id }}:/app/public ./s3-public-${{ github.run_id }}
         export CDN_PATH=$(cd s3-public-${{ github.run_id }} && basename $(find . -maxdepth 1 -type d -name "rc-[0-9]*"))
+        echo "::set-output name=asset-url::${{ inputs.cdn-bucket }}/$CDN_PATH"
         aws s3 sync ./s3-public-${{ github.run_id }}/$CDN_PATH s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
           --cache-control max-age=31536000 \
           --exclude "*.php" --exclude ".htaccess" --exclude ".gitignore" --exclude "*.txt" --exclude "*icon*" --exclude "vendor" --exclude "mix-manifest.json" \
@@ -93,7 +94,7 @@ runs:
       with:
         name: ${{ inputs.name }}
         template: ${{ inputs.cf-template }}
-        parameter-overrides: ImageVersion=${{ inputs.image-tag }}${{ if inputs.asset-url == '' || ", AssetURL=${{ inputs.asset-url }}"  }}
+        parameter-overrides: ImageVersion=${{ inputs.image-tag }}${{ if inputs.asset-url == '' || ", AssetURL=${{ steps.sync-cdn.outputs.asset-url }}" }}
         tags: "[{\"Key\": \"cdci\",\"Value\":\"github\"},${{ inputs.tags }}]"
         capabilities: CAPABILITY_NAMED_IAM
         no-fail-on-empty-changeset: "1"
