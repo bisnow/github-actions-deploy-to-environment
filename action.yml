@@ -89,12 +89,21 @@ runs:
         file-path: ${{ inputs.sqs-config-file-path }}
         base64: 'true'
         ssm-path: ${{ inputs.ssm-path }}
+    - name: Prepare Parameter Overrides
+      id: prepare-overrides
+      shell: bash
+      run: |
+        overrides="ImageVersion=${{ inputs.image-tag }}"
+        if [[ "${{ inputs.set-asset-url }}" != "" ]]; then
+          overrides="$overrides,AssetURL=${{ steps.sync-cdn.outputs.asset-url }}"
+        fi
+        echo "OVERRIDES=$overrides" >> $GITHUB_ENV
     - name: Deploy to AWS CloudFormation
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: ${{ inputs.name }}
         template: ${{ inputs.cf-template }}
-        parameter-overrides: ImageVersion=${{ inputs.image-tag }}${{ if inputs.set-asset-url == '' || ", AssetURL=${{ steps.sync-cdn.outputs.asset-url }}" }}
+        parameter-overrides: ${{ env.OVERRIDES }}
         tags: "[{\"Key\": \"cdci\",\"Value\":\"github\"},${{ inputs.tags }}]"
         capabilities: CAPABILITY_NAMED_IAM
         no-fail-on-empty-changeset: "1"
