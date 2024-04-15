@@ -97,6 +97,9 @@ runs:
         if [[ "${{ inputs.set-asset-url }}" != "" ]]; then
           overrides="$overrides,AssetURL=${{ steps.sync-cdn.outputs.asset-url }}"
         fi
+        if [[ "${{ inputs.parameter-overrides }}" != "" ]]; then
+          overrides="$overrides,${{ inputs.parameter-overrides }}"
+        fi
         echo "OVERRIDES=$overrides" >> $GITHUB_ENV
     - name: Deploy to AWS CloudFormation
       uses: aws-actions/aws-cloudformation-github-deploy@v1
