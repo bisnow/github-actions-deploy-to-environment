@@ -17,6 +17,10 @@ inputs:
   cf-template:
     description: 'Path to cloudformation template'
     required: true
+  s3-bucket:
+    description: 'S3 bucket for cf template'
+    required: false
+    default: ''
   name:
     description: 'Name of the cloudformation stack'
     required: true
@@ -81,7 +85,11 @@ runs:
     - name: Check cloudformation template
       uses: stelligent/cfn_nag@master
       with:
-        input_path: "./deploy/${{ inputs.environment }}/ecs-fargate-service.yaml"
+        input_path: "${{ inputs.cf-template }}"
+    - name: Copy template to s3 bucket
+      shell: bash
+      if: ${{ inputs.s3-bucket != '' }}
+      run: aws s3 cp ${{ inputs.cf-template }} s3://${{ inputs.s3-bucket }}/${{ inputs.environment }}/${{ inputs.name }}-${{ inputs.image-tag }}.yaml
     - name: Write sqs config file to SSM
       uses: bisnow/github-actions-store-sqs-config-ssm@v1.2
       if: ${{ inputs.sqs-config-file-path != '' }}
@@ -101,7 +109,18 @@ runs:
           overrides="$overrides,${{ inputs.parameter-overrides }}"
         fi
         echo "OVERRIDES=$overrides" >> $GITHUB_ENV
+    - name: Deploy to AWS CloudFormation from S3
+      if: ${{ inputs.s3-bucket != '' }}
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      with:
+        name: ${{ inputs.name }}
+        template: s3://${{ inputs.s3-bucket }}/${{ inputs.environment }}/${{ inputs.name }}-${{ inputs.image-tag }}.yaml
+        parameter-overrides: ${{ env.OVERRIDES }}
+        tags: "[{\"Key\": \"cdci\",\"Value\":\"github\"},${{ inputs.tags }}]"
+        capabilities: CAPABILITY_NAMED_IAM
+        no-fail-on-empty-changeset: "1"
     - name: Deploy to AWS CloudFormation
+      if: ${{ inputs.s3-bucket == '' }}
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: ${{ inputs.name }}
