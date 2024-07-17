@@ -81,7 +81,7 @@ runs:
     - name: Check cloudformation template
       uses: stelligent/cfn_nag@master
       with:
-        input_path: "{{ inputs.cf-template }}"
+        input_path: ${{ inputs.cf-template }}
     - name: Write sqs config file to SSM
       uses: bisnow/github-actions-store-sqs-config-ssm@v1.2
       if: ${{ inputs.sqs-config-file-path != '' }}
