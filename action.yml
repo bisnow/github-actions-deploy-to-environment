@@ -34,6 +34,10 @@ inputs:
     description: 'Sync CDN with public folder'
     default: ''
     required: false
+  compress-assets:
+    description: 'Compress assets'
+    default: 'false'
+    required: false
   set-asset-url:
     description: 'Set to a non-empty string to use the asset-url output from the sync-cdn step'
     default: ''
@@ -66,12 +70,43 @@ runs:
       run: |
         docker create --platform=linux/arm64 --name build-${{ github.run_id }} ${{ inputs.repository }}:${{ inputs.image-tag }}
         docker cp build-${{ github.run_id }}:/app/public ./s3-public-${{ github.run_id }}
-        export CDN_PATH=$(cd s3-public-${{ github.run_id }} && basename $(find . -maxdepth 1 -type d -name "rc-[0-9]*"))
+        export CDN_PATH=$(cd s3-public-${{ github.run_id }} && basename $(find . -maxdepth 1 -type d -name "*-[0-9]*"))
         echo "::set-output name=asset-url::https://${{ inputs.cdn-bucket }}/$CDN_PATH"
-        aws s3 sync ./s3-public-${{ github.run_id }}/$CDN_PATH s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
-          --cache-control max-age=31536000 \
-          --exclude "*.php" --exclude ".htaccess" --exclude ".gitignore" --exclude "*.txt" --exclude "*icon*" --exclude "vendor" --exclude "mix-manifest.json" \
-          --follow-symlinks --delete
+        
+        cd ./s3-public-${{ github.run_id }}/$CDN_PATH
+
+        if [[ "${{ inputs.compress-assets }}" == "true" ]]; then
+          # Upload gzipped files first, using the original filename
+          find . -name "*.gz" -exec bash -c '
+            SOURCE="${1}"
+            TARGET="s3://${{ inputs.cdn-bucket }}/$CDN_PATH/${1%.gz}"
+            CONTENT_TYPE=$(file --mime-type -b "${1%.gz}")
+            
+            aws s3 cp "$SOURCE" "$TARGET" \
+              --content-encoding gzip \
+              --content-type "$CONTENT_TYPE" \
+              --cache-control max-age=31536000
+          ' _ {} \;
+          
+          # Upload remaining non-gzipped files
+          aws s3 sync . s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
+            --cache-control max-age=31536000 \
+            --exclude "*.gz" \
+            --exclude "*.php" --exclude ".htaccess" --exclude ".gitignore" \
+            --exclude "*.txt" --exclude "*icon*" --exclude "vendor" \
+            --exclude "mix-manifest.json" \
+            --follow-symlinks --delete
+        else
+          # Upload all files without compression
+          aws s3 sync . s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
+            --cache-control max-age=31536000 \
+            --exclude "*.php" --exclude ".htaccess" --exclude ".gitignore" \
+            --exclude "*.txt" --exclude "*icon*" --exclude "vendor" \
+            --exclude "mix-manifest.json" \
+            --follow-symlinks --delete
+        fi
+
+        cd ../../
         docker rm build-${{ github.run_id }}
         rm -rf ./s3-public-${{ github.run_id }}
     - name: Tag image and push image
