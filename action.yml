@@ -77,16 +77,19 @@ runs:
 
         if [[ "${{ inputs.compress-assets }}" == "true" ]]; then
           # Upload gzipped files first, using the original filename
-          find . -name "*.gz" -exec bash -c '
-            SOURCE="${1}"
-            TARGET="s3://${{ inputs.cdn-bucket }}/$CDN_PATH/${1%.gz}"
-            CONTENT_TYPE=$(file --mime-type -b "${1%.gz}")
-            
-            aws s3 cp "$SOURCE" "$TARGET" \
-              --content-encoding gzip \
-              --content-type "$CONTENT_TYPE" \
-              --cache-control max-age=31536000
-          ' _ {} \;
+          find . -type f -name "*.gz" -exec bash -c '
+            for file in "$@"; do
+              SOURCE="${file}"
+              TARGET="s3://${{ inputs.cdn-bucket }}/$CDN_PATH/${file%.gz}"
+              CONTENT_TYPE=$(file --mime-type -b "${file%.gz}")
+              
+              aws s3 cp "$SOURCE" "$TARGET" \
+                --content-encoding gzip \
+                --content-type "$CONTENT_TYPE" \
+                --cache-control max-age=31536000 \
+                --metadata-directive REPLACE
+            done
+          ' _ {} +
           
           # Upload remaining non-gzipped files
           aws s3 sync . s3://${{ inputs.cdn-bucket }}/$CDN_PATH \
