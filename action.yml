@@ -130,7 +130,11 @@ runs:
       shell: bash
       run: |
         TEMPLATE_FILENAME=$(basename ${{ inputs.cf-template }})
-        TEMPLATE_S3_KEY="cloudformation-templates/${{ inputs.name }}/${TEMPLATE_FILENAME}"
+        TEMPLATE_NAME="${TEMPLATE_FILENAME%.*}"
+        TEMPLATE_EXT="${TEMPLATE_FILENAME##*.}"
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        VERSIONED_FILENAME="${TEMPLATE_NAME}-${TIMESTAMP}-${{ github.run_id }}.${TEMPLATE_EXT}"
+        TEMPLATE_S3_KEY="cloudformation-templates/${{ inputs.name }}/${VERSIONED_FILENAME}"
         TEMPLATE_S3_URL="s3://${{ inputs.s3-template-bucket }}/${TEMPLATE_S3_KEY}"
 
         aws s3 cp ${{ inputs.cf-template }} "${TEMPLATE_S3_URL}"
