@@ -46,6 +46,10 @@ inputs:
     description: 'Cloudformation parameter overrides'
     default: ''
     required: false
+  s3-template-bucket:
+    description: 'S3 bucket to upload CloudFormation template to (optional)'
+    default: ''
+    required: false
 
 runs:
   using: 'composite'
@@ -120,6 +124,20 @@ runs:
       uses: stelligent/cfn_nag@master
       with:
         input_path: ${{ inputs.cf-template }}
+    - name: Upload CloudFormation template to S3
+      if: ${{ inputs.s3-template-bucket != '' }}
+      id: upload-template
+      shell: bash
+      run: |
+        TEMPLATE_FILENAME=$(basename ${{ inputs.cf-template }})
+        TEMPLATE_S3_KEY="cloudformation-templates/${{ inputs.name }}/${TEMPLATE_FILENAME}"
+        TEMPLATE_S3_URL="s3://${{ inputs.s3-template-bucket }}/${TEMPLATE_S3_KEY}"
+
+        aws s3 cp ${{ inputs.cf-template }} "${TEMPLATE_S3_URL}"
+
+        TEMPLATE_HTTPS_URL="https://${{ inputs.s3-template-bucket }}.s3.amazonaws.com/${TEMPLATE_S3_KEY}"
+        echo "template-url=${TEMPLATE_HTTPS_URL}" >> $GITHUB_OUTPUT
+        echo "Uploaded template to: ${TEMPLATE_HTTPS_URL}"
     - name: Write sqs config file to SSM
       uses: bisnow/github-actions-store-sqs-config-ssm@v1.2
       if: ${{ inputs.sqs-config-file-path != '' }}
@@ -143,7 +161,7 @@ runs:
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: ${{ inputs.name }}
-        template: ${{ inputs.cf-template }}
+        template: ${{ inputs.s3-template-bucket != '' && steps.upload-template.outputs.template-url || inputs.cf-template }}
         parameter-overrides: ${{ env.OVERRIDES }}
         tags: "[{\"Key\": \"cdci\",\"Value\":\"github\"},${{ inputs.tags }}]"
         capabilities: CAPABILITY_NAMED_IAM
