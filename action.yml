@@ -84,7 +84,8 @@ runs:
           find . -type f -name "*.gz" -exec bash -c '
             for file in "$@"; do
               SOURCE="${file}"
-              TARGET="s3://${{ inputs.cdn-bucket }}/$CDN_PATH/${file%.gz}"
+              file_without_dot="${file#./}"
+              TARGET="s3://${{ inputs.cdn-bucket }}/$CDN_PATH/${file_without_dot%.gz}"
               CONTENT_TYPE=$(file --mime-type -b "${file%.gz}")
               
               aws s3 cp "$SOURCE" "$TARGET" \
